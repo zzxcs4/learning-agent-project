@@ -1,0 +1,19 @@
+// 强调色统一为黑色（用户要求：橙色替换为黑色，如新建会话、发送按钮等）
+$brand-color: #000000;
+$text-main: #222222;
+$text-muted: #9aa1a8;
+$text-placeholder: #b9c0c7;
+$border-color: #e6e9ef;
+$page-bg: #fbf8f3;
+$card-shadow: 0 8px 18px rgba(0, 0, 0, 0.08);
+// 顶部导航：白色面板 + 轻投影（参考项目 navbar 的写法）
+$header-bg: #ffffff;
+$header-border: transparent;
+$header-shadow: 0 2px 10px rgba(0, 0, 0, 0.06);
+$tab-bg: transparent;
+$tab-active-bg: transparent;
+$tab-active-shadow: inset 0 -2px 0 #000000;
+// 主按钮（新建会话 / 新建笔记 / 发送）底色
+$primary-btn-bg: #000000;
+$primary-btn-hover: #383838;
+$primary-btn-active: #000000;

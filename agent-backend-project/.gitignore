@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.env
+.env.*
+.env.development
+.env.production
+.env.testing
+logs/
+*.log
+.env.development

@@ -1,0 +1,45 @@
+# ---- IDE / editor ----
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# ---- OS ----
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Python ----
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# ---- Node ----
+node_modules/
+dist/
+dist-ssr/
+*.local
+
+# ---- Secrets / env ----
+.env
+.env.*
+!.env.example
+!.env.production.example
+!.env.development.example
+*.pem
+*.key
+*.p12
+
+# ---- Logs / runtime data ----
+logs/
+*.log
+uploads/

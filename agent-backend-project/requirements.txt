@@ -1,0 +1,126 @@
+# 数据库迁移工具
+alembic==1.14.1
+# Pydantic 类型注解依赖
+annotated-types==0.7.0
+# FastAPI 异步 I/O 依赖
+anyio==4.12.1
+# Passlib 密码哈希依赖
+bcrypt==5.0.0
+# 命令行工具构建（Alembic 依赖）
+click==8.3.1
+# 终端颜色输出
+colorama==0.4.6
+# Web 框架核心
+fastapi==0.135.0
+# HTTP/1.1 协议层（Uvicorn 依赖）
+h11==0.16.0
+# 国际化域名处理
+# ⚠️ 别往下钉：idna 是 requests/httpx/anyio 的共同底座，钉低了会被它们一起顶回来。
+idna==3.20
+# Alembic 模板引擎
+Mako==1.3.10
+# Mako 依赖
+MarkupSafe==3.0.3
+# 密码哈希库
+passlib==1.7.4
+# Pydantic 数据验证/设置管理
+pydantic==2.12.5
+# Pydantic v2 核心运行时
+pydantic_core==2.41.5
+# MySQL 数据库驱动
+PyMySQL==1.1.1
+# 从 .env 文件加载环境变量
+python-dotenv==1.0.1
+# SQLAlchemy ORM 库
+SQLAlchemy==2.0.38
+# FastAPI 底层 Web 框架
+starlette==0.52.1
+# Python 类型提示扩展
+typing_extensions==4.15.0
+# JWT 编解码
+# ⚠️ 不能钉在 2.9.0：`mcp==1.30.0` 声明 `pyjwt[crypto]>=2.10.1`，
+#    钉 2.9.0 会让 `pip install -r requirements.txt` 在**全新环境**里直接
+#    ResolutionImpossible 失败（实测 Docker 构建即挂在这一行）。
+#    本地因为环境里早就装成了 2.15.1 才没暴露，属于典型的"requirements 与实际
+#    环境漂移"。本文件其余条目已按实际安装版本对齐。
+# 2.15.1 与代码用法兼容：本项目只用 jwt.encode / jwt.decode（见 app/security.py）。
+PyJWT==2.15.1
+# ASGI 服务器（运行 FastAPI）
+uvicorn==0.41.0
+# Python 日志库
+loguru==0.7.2
+# 冒烟测试 HTTP 客户端
+httpx==0.28.1
+# 冒烟测试框架
+pytest==8.4.2
+# pytest 异步测试支持
+pytest-asyncio==1.2.0
+# FastAPI 文件上传依赖
+python-multipart==0.0.9
+# 腾讯云 COS 对象存储 SDK
+# 注意：该 SDK 元数据把 requests<=2.27.1 / certifi<=2021.10.8 钉死，可能与其它依赖冲突。
+# 若 pip 解析失败，改用：pip install cos-python-sdk-v5 --no-deps
+# 并手动补齐其真实依赖：xmltodict six crcmod pycryptodome
+cos-python-sdk-v5==1.9.44
+# PDF 文本提取与页面渲染（取代 PyPDF2）
+pypdfium2==4.30.0
+# 火山引擎 Python SDK
+volcengine==1.0.223
+# 读取图片
+pillow== 10.4.0
+# Word 文档文本提取
+python-docx==1.1.2
+# 阿里云 DashScope Embedding
+dashscope==1.23.3
+# Qdrant 向量数据库客户端
+qdrant-client==1.13.3
+# ============================================================
+
+# --- 旧版（0.3.x）已注释，保留供对比学习 ---
+# langchain==0.3.28
+# langchain-core==0.3.84
+# langchain-openai==0.3.23
+# langchain-community==0.3.23
+
+# --- 新版（1.x），兼容 LangGraph 1.x ---
+langchain==1.3.4
+langchain-core==1.4.7
+langchain-openai==1.2.2
+# openai SDK：**必须落在 langchain-openai 的约束里（>=2.26.0,<3.0.0）**，否则整条 AI 链路会崩。
+#
+# 为什么单独钉这一条（2026-10-20 实际踩到）：langchain-openai 只声明了上界 `openai<3.0.0`，
+# 而本项目原先**没有**把 openai 写进依赖，于是 `pip install --upgrade "openai>=1.0"`
+# 会直接把它升到 3.x。openai 3.x 把 HTTP 客户端从 `httpx` 换成了 `httpx2`（两个库的
+# `SyncByteStream` 是**不同的类**），而 langchain-core 会传一个普通 `httpx.Client` 进去，
+# 请求到达 httpx 的 transport 时被类型断言拦下：
+#     httpx2/_client.py:1076 -> httpx/_transports/default.py:234
+#     assert isinstance(request.stream, SyncByteStream)  -> AssertionError
+# 症状：agent loop / 出题 / 单轮聊天（凡走 langchain 的）全部报错；而 `pip check` 只有一行
+# 警告、裸 `OpenAI` SDK 反而能正常连服务端，很容易被误判成"只是版本新了一点"。
+openai==2.54.0
+langchain-community==0.4.2
+langchain-text-splitters == 1.1.2
+# LangGraph 工作流编排
+langgraph==1.2.7
+# RunnableWithMessageHistory 兼容包（0.3.x 迁移过渡用）
+langchain-classic==1.0.7
+
+# Redis 客户端
+redis==5.0.0
+
+# 意图识别（FastEmbed + ONNX）
+fastembed==0.2.7
+
+# ============================================================
+# MCP（Model Context Protocol，第 3 期）
+# ============================================================
+# 官方 SDK：自建 stdio server（app/agent/mcp/server.py）+ 客户端（app/agent/mcp/client.py）。
+# 注意必须 <2：mcp 2.x 已把 FastMCP 改名为 MCPServer（from mcp.server.mcpserver import MCPServer），
+# 本仓与下面的 mcp-server-fetch 都按 1.x API 写。要升 2.x 请两处一起改。
+mcp==1.30.0
+# 官方 fetch server：作为"第三方 MCP server"的联调对象（证明客户端通用，见 scripts/verify_mcp.py 第 7 段）。
+# 它自身要求 mcp<2，与上面那条一致。
+mcp-server-fetch==2026.10.10
+# 官方 time server：学习排期要真实日期/时区（模型心算日期不可靠），见 scripts/verify_mcp.py 第 8 段。
+# 必须钉 2026.10.10：下一个版本起要求 mcp>=2.3，与上面 mcp==1.30.0 冲突。
+mcp-server-time==2026.10.10

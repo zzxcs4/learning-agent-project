@@ -1,0 +1,57 @@
+# ============================================================
+# 依赖可行性验证镜像（Docker 方案 A 的前置验证，用完即删）
+#
+# 只安装依赖，不包含任何业务源码、不启动服务。
+# 目的：一次性回答三个问题
+#   [1] pip install -r requirements.txt 原样能不能解析成功
+#   [2] crcmod 这个 C 扩展能不能在 Linux 上编译出来（PyPI 无任何 wheel）
+#   [3] 整套依赖装完后镜像有多大
+#
+# 清理命令：docker rmi deps-test:latest
+# ============================================================
+FROM python:3.12-slim
+
+# fastembed 0.2.7 限定 python < 3.13，所以基础镜像只能是 3.12
+# crcmod 是 C 扩展且 PyPI 无 Linux wheel，必须现场编译；
+# 只编译一个单文件扩展用 gcc 就够，build-essential 会多装 300MB+ 的 g++/binutils/perl
+# 另：默认的 deb.debian.org 在国内极慢（实测 19 分钟没下完），换成清华源
+RUN set -eux; \
+    for f in /etc/apt/sources.list /etc/apt/sources.list.d/debian.sources; do \
+        if [ -f "$f" ]; then sed -i 's|deb.debian.org|mirrors.tuna.tsinghua.edu.cn|g' "$f"; fi; \
+    done; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends gcc; \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /deps-test
+COPY requirements.txt .
+
+# 实测：容器内直连 files.pythonhosted.org 会 ReadTimeout（pip 默认只等 15 秒），
+# 所以 pip 也必须走国内镜像，并放宽超时与重试
+RUN pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple \
+    && pip config set global.timeout 120 \
+    && pip config set global.retries 5 \
+    && pip config list
+
+# 各步骤用 ; 分隔：前一步失败不中断后续，便于一次构建看到全部结论
+RUN echo "===== [A] 原样 pip install -r requirements.txt =====" ; \
+    (pip install --no-cache-dir -r requirements.txt 2>&1 | tail -25) ; \
+    echo "===== [B] 剔除 cos-python-sdk-v5 后安装 =====" ; \
+    sed '/^cos-python-sdk-v5/d' requirements.txt > /tmp/reqs-no-cos.txt ; \
+    (pip install --no-cache-dir -r /tmp/reqs-no-cos.txt 2>&1 | tail -25) ; \
+    echo "===== [C] COS SDK 真实依赖 + 本体（--no-deps）=====" ; \
+    (pip install --no-cache-dir xmltodict six crcmod pycryptodome 2>&1 | tail -20) ; \
+    (pip install --no-cache-dir --no-deps cos-python-sdk-v5==1.9.44 2>&1 | tail -10) ; \
+    echo "===== [D] 导入校验 =====" ; \
+    python -c "import fastapi, pydantic, starlette; print('fastapi/pydantic/starlette OK')" 2>&1 ; \
+    python -c "import sqlalchemy, pymysql, alembic; print('db/alembic OK')" 2>&1 ; \
+    python -c "import redis, qdrant_client; print('redis/qdrant OK')" 2>&1 ; \
+    python -c "import langchain, langgraph, langchain_core; print('langchain/langgraph OK')" 2>&1 ; \
+    python -c "import dashscope, volcengine; print('dashscope/volcengine OK')" 2>&1 ; \
+    python -c "import pypdfium2, docx, PIL; print('pypdfium2/docx/PIL OK')" 2>&1 ; \
+    python -c "import fastembed; print('fastembed OK')" 2>&1 ; \
+    python -c "import qcloud_cos; print('COS SDK import OK')" 2>&1 ; \
+    python -c "import crcmod._crcfunext; print('crcmod C 扩展编译成功')" 2>&1 ; \
+    echo "===== [E] 汇总 =====" ; \
+    echo -n "已安装包数: " ; pip list 2>/dev/null | wc -l ; \
+    pip --version
